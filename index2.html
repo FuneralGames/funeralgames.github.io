@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>MIDI Image Player</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: black;
+    }
+    img {
+      width: 100vw;
+      height: auto;
+      display: block;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <img src="/funeral.gif" alt="Tap to Play/Pause" id="image">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.39/Tone.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tonejs/midi@2.0.27/build/Midi.min.js"></script>
+
+  <script>
+    let isPlaying = false;
+    let part;
+    let synths = [];
+
+    const playMidi = async () => {
+      const response = await fetch("./trumpet.mid");
+      const arrayBuffer = await response.arrayBuffer();
+      const midi = new Midi(arrayBuffer);
+
+      Tone.Transport.stop();
+      Tone.Transport.cancel(); // clear any existing events
+      synths.forEach(s => s.dispose());
+      synths = [];
+
+      midi.tracks.forEach(track => {
+    const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+        synths.push(synth);
+
+        const now = Tone.now();
+        const notes = track.notes.map(note => ({
+          time: note.time,
+          note: note.name,
+          duration: note.duration,
+          velocity: note.velocity
+        }));
+
+        part = new Tone.Part((time, value) => {
+          synth.triggerAttackRelease(value.note, value.duration, time, value.velocity);
+        }, notes).start(0);
+      });
+
+      // Tone.Transport.bpm.value = 155;
+      await Tone.start(); // required to unlock audio on user interaction
+      Tone.Transport.start();
+    };
+
+    const stopMidi = () => {
+      Tone.Transport.stop();
+      Tone.Transport.cancel();
+      synths.forEach(s => s.dispose());
+      synths = [];
+    };
+
+    document.getElementById("image").addEventListener("click", async () => {
+      if (!isPlaying) {
+        await playMidi();
+      } else {
+        stopMidi();
+      }
+      isPlaying = !isPlaying;
+    });
+  </script>
+</body>
+</html>
