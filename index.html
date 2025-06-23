@@ -1,41 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Funeral Games</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      background: #f1f1f1;
-      cursor: pointer; /* Indicates click interaction */
-    }
-
-    img {
-      max-width: 100vw;
-      max-height: 100vh;
-      width: auto;
-      height: auto;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js Canvas</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
 </head>
-
 <body>
-  <img src="anim.gif" alt="Tap to Play/Pause" id="image">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.39/Tone.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tonejs/midi@2.0.27/build/Midi.min.js"></script>
-
-  <script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tone@14.7.58/build/Tone.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tonejs/midi@2.0.27/build/Midi.min.js"></script>
+<script>
     let isPlaying = false;
     let part;
     let synths = [];
+    let rotating = false;
 
     const playMidi = async () => {
       const response = await fetch("./trumpet.mid");
@@ -48,7 +30,7 @@
       synths = [];
 
       midi.tracks.forEach(track => {
-        const synth = new Tone.PolySynth(Tone.Synth).toDestination();
+        const synth = new Tone.PolySynth().toDestination();
         synths.push(synth);
 
         const notes = track.notes.map(note => ({
@@ -74,15 +56,96 @@
       synths = [];
     };
 
-    document.getElementById("image").addEventListener("click", async () => {
-      if (!isPlaying) {
-        await playMidi();
-      } else {
-        stopMidi();
-      }
-      isPlaying = !isPlaying;
-    });
-  </script>
-</body>
+    // Load the image and create the scene
+    const loader = new THREE.TextureLoader();
+    loader.load('anim.gif', (texture) => {
+        texture.magFilter = THREE.LinearFilter;
+        texture.minFilter = THREE.LinearFilter;
+        const aspectRatio = texture.image.width / texture.image.height;
 
+        // Create the scene, camera, and renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(20, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({
+            canvas: document.createElement('canvas'),
+            antialias: true
+        });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Create a single sided flat plane
+        const geometry = new THREE.PlaneGeometry(1, 1 / aspectRatio);
+        const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.FrontSide });
+        const plane = new THREE.Mesh(geometry, material);
+
+        // Rotate the plane to face away from the camera and tilt
+        plane.rotation.x = Math.PI;
+        plane.rotation.z = THREE.MathUtils.degToRad(-5);
+
+        // Translate the plane to the origin
+        plane.position.set(0, 0, 0);
+
+        // Add the plane to the scene
+        scene.add(plane);
+
+        // Calculate the camera distance to fit the plane in the viewport
+        const fov = camera.fov * Math.PI / 180;
+        const height = plane.geometry.parameters.height;
+        const distance = height / (2 * Math.tan(fov / 2));
+        const aspect = window.innerWidth / window.innerHeight;
+        if (aspect > aspectRatio) {
+            camera.position.z = distance / aspectRatio * aspect;
+        } else {
+            camera.position.z = distance;
+        }
+        camera.lookAt(plane.position);
+
+        let angle = 0;
+        function animateRotation() {
+            angle += 0.05;
+            plane.rotation.x -= 0.05;
+            if (angle < Math.PI) {
+                requestAnimationFrame(animateRotation);
+            } else {
+                rotating = false;
+            }
+            renderer.render(scene, camera);
+        }
+
+        document.addEventListener('click', async () => {
+            if (!rotating) {
+                if (!isPlaying) {
+                    await playMidi();
+                } else {
+                    stopMidi();
+                }
+                isPlaying = !isPlaying;
+                rotating = true;
+                angle = 0;
+                animateRotation();
+            }
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            const aspect = window.innerWidth / window.innerHeight;
+            if (aspect > aspectRatio) {
+                camera.position.z = distance / aspectRatio * aspect;
+            } else {
+                camera.position.z = distance;
+            }
+        });
+
+        // Animate the scene
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+        animate();
+    });
+</script>
+</body>
 </html>
