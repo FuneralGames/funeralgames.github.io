@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Three.js Canvas</title>
     <style>
-        body { margin: 0; }
+        body { margin: 0; cursor: pointer}
         canvas { display: block; }
     </style>
 </head>
@@ -56,12 +56,23 @@
       synths = [];
     };
 
-    // Load the image and create the scene
+    // Load the images and create the scene
     const loader = new THREE.TextureLoader();
-    loader.load('anim.gif', (texture) => {
-        texture.magFilter = THREE.LinearFilter;
-        texture.minFilter = THREE.LinearFilter;
-        const aspectRatio = texture.image.width / texture.image.height;
+    const texturePromises = [
+      new Promise(resolve => loader.load('anim.gif', resolve)),
+      new Promise(resolve => loader.load('funeralgames.png', resolve)),
+    ];
+
+    Promise.all(texturePromises).then(([animTexture, funeralgamesTexture]) => {
+        animTexture.magFilter = THREE.LinearFilter;
+        animTexture.minFilter = THREE.LinearFilter;
+        const animAspectRatio = animTexture.image.width / animTexture.image.height;
+
+        funeralgamesTexture.magFilter = THREE.LinearFilter;
+        funeralgamesTexture.minFilter = THREE.LinearFilter;
+        const funeralgamesAspectRatio = funeralgamesTexture.image.width / funeralgamesTexture.image.height;
+
+        const aspectRatio = Math.max(animAspectRatio, funeralgamesAspectRatio);
 
         // Create the scene, camera, and renderer
         const scene = new THREE.Scene();
@@ -73,24 +84,24 @@
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // Create a single sided flat plane
+        // Create a single sided flat plane for back side
         const geometry = new THREE.PlaneGeometry(1, 1 / aspectRatio);
-        const material = new THREE.MeshBasicMaterial({ map: texture, side: THREE.FrontSide });
-        const plane = new THREE.Mesh(geometry, material);
+        const material = new THREE.MeshBasicMaterial({ map: animTexture });
+        const backPlane = new THREE.Mesh(geometry, material);
+        backPlane.rotation.x = Math.PI;
+        backPlane.rotation.z = THREE.MathUtils.degToRad(-5);
 
-        // Rotate the plane to face away from the camera and tilt
-        plane.rotation.x = Math.PI;
-        plane.rotation.z = THREE.MathUtils.degToRad(-5);
+        // Create a single sided flat plane for front side
+        const frontMaterial = new THREE.MeshBasicMaterial({ map: funeralgamesTexture });
+        const frontPlane = new THREE.Mesh(geometry, frontMaterial);
 
-        // Translate the plane to the origin
-        plane.position.set(0, 0, 0);
-
-        // Add the plane to the scene
-        scene.add(plane);
+        // Add both planes to the scene
+        scene.add(backPlane);
+        scene.add(frontPlane);
 
         // Calculate the camera distance to fit the plane in the viewport
         const fov = camera.fov * Math.PI / 180;
-        const height = plane.geometry.parameters.height;
+        const height = backPlane.geometry.parameters.height;
         const distance = height / (2 * Math.tan(fov / 2));
         const aspect = window.innerWidth / window.innerHeight;
         if (aspect > aspectRatio) {
@@ -98,12 +109,13 @@
         } else {
             camera.position.z = distance;
         }
-        camera.lookAt(plane.position);
+        camera.lookAt(backPlane.position);
 
         let angle = 0;
         function animateRotation() {
             angle += 0.05;
-            plane.rotation.x -= 0.05;
+            backPlane.rotation.x -= 0.05;
+            frontPlane.rotation.x -= 0.05;
             if (angle < Math.PI) {
                 requestAnimationFrame(animateRotation);
             } else {
