@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(convert:*)",
+      "Bash(sips:*)",
+      "Bash(xxd:*)"
+    ]
+  }
+}
