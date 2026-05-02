@@ -10,7 +10,7 @@
       padding: 0;
       width: 100%;
       height: 100%;
-      overflow: hidden;
+      overflow-x: hidden;
       background: #f7f7f7;
       cursor: pointer;
     }
@@ -31,12 +31,72 @@
       user-select: none;
       -webkit-user-select: none;
     }
+
+    #projects {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      width: min(100vw, calc(100vh * 1940 / 1500));
+      margin: 0 auto;
+      padding: 3rem 0;
+      background: #f7f7f7;
+      cursor: default;
+      box-sizing: border-box;
+    }
+
+    #projects .project {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      flex: 1;
+      min-width: 0;
+      text-decoration: none;
+      color: inherit;
+      opacity: 1;
+      transition: opacity 0.2s;
+    }
+
+    #projects .project:hover {
+      opacity: 0.6;
+    }
+
+    #projects .project img {
+      width: 100%;
+      height: 120px;
+      object-fit: contain;
+      object-position: center center;
+      display: block;
+    }
+
+    #projects .project p {
+      margin: 0;
+      font-size: 18px;
+      text-align: center;
+      line-height: 1.4;
+      font-family: sans-serif;
+    }
   </style>
 </head>
 <body>
   <div id="wrapper" aria-label="Tap to toggle music playback.">
     <img id="image" src="anim.gif" draggable="false" />
   </div>
+
+  <section id="projects">
+    <a href="https://gjhilton.github.io/Sharpie/" class="project" target="_blank" rel="noopener noreferrer">
+      <img src="../Sharpie/src/artwork/branding/sharpielogo.jpg" alt="Sharpie" />
+      <p>game for learning to read Early Modern handwriting</p>
+    </a>
+    <a href="https://gjhilton.github.io/Summa/" class="project" target="_blank" rel="noopener noreferrer">
+      <img src="../Summa/src/assets/logo.svg" alt="Summa" />
+      <p>simple spreadsheet for Early Modern English currency</p>
+    </a>
+    <a href="https://github.com/gjhilton/Saxton" class="project" target="_blank" rel="noopener noreferrer">
+      <img src="../Saxton/artwork/Logo.PNG" alt="Saxton" />
+      <p>import Illustrator vectors into QGIS</p>
+    </a>
+  </section>
 
   <script src="https://cdn.jsdelivr.net/npm/tone@14.7.58/build/Tone.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tonejs/midi@2.0.27/build/Midi.min.js"></script>
